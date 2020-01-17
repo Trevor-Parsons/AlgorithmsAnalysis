@@ -1,0 +1,746 @@
+// Name: Trevor Parsons
+// Description: This program determines the time that seletion sort, insertion sort,
+// bubble sort, bubble sort with swaps counting, quick sort, and merge sort require
+// to sort arrays containing random, sorted, and almost sorted integers. The arrays
+// contain integer values from 1-10000, and are of size 1,000, 10,000, and 10,0000.
+
+#include <iostream>
+#include <cstdlib>
+// cstdlib inclusion is used only for the rand() funcion, used for assigning random
+// numbers to large arrays.
+#include <fstream>
+#include <chrono>
+
+using namespace std;
+using namespace chrono;
+
+// Used to swap the values stored in two memory locations
+void swap(int* a, int* b)
+{
+	int temp = *a;
+	*a = *b;
+	*b = temp;
+}
+
+// Used to detrmine if the values in an array are sorted
+void sorted(int a[], int n)
+{
+	bool sorted = true;
+
+	for (int i = 0; i < n - 1; i++)
+	{
+		if (a[i] > a[i + 1])
+		{
+			cout << "Sort for " << n << ": not sorted" << endl;
+			sorted = false;
+		}
+
+		if (sorted == false)
+			break;
+	}
+
+	if (sorted == true)
+		cout << "Sort for " << n << ": sorted" << endl;
+}
+
+// Used to assign random numbers to arrays of size 1000,
+// 10000, and 100000
+void genRand(int a[], int b[], int c[])
+{
+	for (int i = 0; i < 100000; i++)
+	{
+		if (i < 1000)
+			a[i] = rand() % 10000 + 1;
+
+		if (i < 10000)
+			b[i] = rand() % 10000 + 1;
+
+		c[i] = rand() % 10000 + 1;
+	}
+}
+
+// Used to assign sorted numbers to arrays of size 1000,
+// 10000, and 100000.
+void genSorted(int a[], int b[], int c[])
+{
+	int count1 = 1;
+	int count2 = 1;
+
+	for (int i = 0; i < 100000; i++)
+	{
+		if (i < 1000)
+			a[i] = i + 1;
+
+		if (i < 10000)
+			b[i] = i + 1;
+
+		if (count1 != 10)
+		{
+			count1++;
+			c[i] = count2;
+		}
+		else
+		{
+			count1 = 1;
+			count2++;
+			c[i] = count2;
+		}
+	}
+
+	c[99999] = 10000;
+}
+
+// Used to assign almost sorted numbers to arrays of size 1000,
+// 10000, and 100000. Every 10th element is assigned an unsorted value.
+void genASorted(int a[], int b[], int c[])
+{
+	int count1 = 1;
+	int count2 = 1;
+
+	for (int i = 0; i < 100000; i++)
+	{
+		if (i < 1000)
+			a[i] = i + 1;
+
+		if (i < 10000)
+			b[i] = i + 1;
+
+		if (count1 != 10)
+		{
+			count1++;
+			c[i] = count2;
+		}
+		else
+		{
+			count1 = 1;
+			count2++;
+			c[i] = count2;
+		}
+	}
+
+	c[99999] = 10000;
+
+	// Assign every 10th value in the arrays to a random number.
+	for (int i = 9; i <= 999999; i += 10)
+	{
+		if (i < 1000)
+			a[i] = rand() % 10000 + 1;
+
+		if (i < 10000)
+			b[i] = rand() % 10000 + 1;
+
+		if (i < 100000)
+			c[i] = rand() % 10000 + 1;
+	}
+}
+
+// Selection sort implementation 
+void selectionSort(int a[], int size)
+{
+	int min;
+
+	// Loop to check all elements but the last 
+	for (int i = 0; i < size - 1; i++)
+	{
+		// Find the smallest element in remaining array values
+		min = i;
+
+		for (int j = i + 1; j < size; j++)
+		{
+			if (a[j] < a[min])
+				min = j;
+		}
+
+		// Swap the minimum value with the first value
+		swap(&a[min], &a[i]);
+	}
+}
+
+// Insertion sort implementation
+void insertionSort(int a[], int size)
+{
+	int key, j;
+
+	// Loop to cycle through all input array locations
+	for (int i = 1; i < size; i++)
+	{
+		key = a[i];
+
+		j = i - 1;
+
+		// Loop to determine proper location to place an out of order value
+		while (j >= 0 && a[j] > key)
+		{
+			a[j + 1] = a[j];
+			j--;
+		}
+
+		a[j + 1] = key;
+	}
+}
+
+// Bubble sort implementation that does not count swaps
+void bubbleSort(int a[], int size)
+{
+	// Loop to cycle through all necessary input array locations
+	for (int i = 0; i < size - 2; i++)
+	{
+		// Loop to cycle through all previously unsorted array locations
+		for (int j = size - 1; j > i; j--)
+		{
+			if (a[j] < a[j - 1])
+			{
+				swap(&a[j], &a[j - 1]);
+			}
+		}
+	}
+}
+
+// Bubble sort implemenation that stops running when
+// no swaps were made during a pass thorugh the input array.
+void bubbleSortSwap(int a[], int size)
+{
+	bool noSwaps = true;
+	
+	// Looop to cycle through all necessary input array locations
+	for (int i = 0; i < size - 2; i++)
+	{
+		// Loop to cycle through all previously unsorted array locations
+		for (int j = size - 1; j > i; j--)
+		{
+			if (a[j] < a[j - 1])
+			{
+				swap(&a[j], &a[j - 1]);
+				noSwaps = false;
+			}
+		}
+
+		// If no swaps were made during a pass through the whole array,
+		// then the array is sorted and the function stops.
+		if (noSwaps == true)
+			break;
+		else
+			noSwaps = true;
+	}
+}
+
+// Partitioning function 
+int partition(int arr[], int low, int high)
+{
+	// select the last element as pivot 
+	int pivot = arr[high];   
+	int i = (low - 1); 
+
+	for (int j = low; j < high; j++)
+	{
+		// If current element is smaller than or 
+		// equal to pivot 
+		if (arr[j] <= pivot)
+		{
+			i++;  
+
+			swap(&arr[i], &arr[j]);
+		}
+	}
+	
+	// place pivot in correct location 
+	swap(&arr[i + 1], &arr[high]);
+
+	return (i + 1);
+}
+
+// Quick sort implemenation 
+void quickSort(int arr[], int low, int high)
+{
+	if (low < high)
+	{
+		// Determine where to divide the sub arrays
+		int part = partition(arr, low, high);
+
+		// Recursive quick sort calls
+		quickSort(arr, low, part - 1);
+		quickSort(arr, part + 1, high);
+	}
+}
+
+// Merge function used in mergeSort
+void merge(int a[], int low, int high, int mid)
+{
+	int* temp = new int[high - low + 1];
+	int i = low;
+	int k = 0;
+	int j = mid + 1;
+
+	// Combine two arrays into temp
+	while (i <= mid && j <= high)
+	{
+		if (a[i] < a[j])
+		{
+			temp[k] = a[i];
+			k++;
+			i++;
+		}
+		else
+		{
+			temp[k] = a[j];
+			k++;
+			j++;
+		}
+	}
+
+	// Insert all the remaining values from i to mid into temp
+	while (i <= mid)
+	{
+		temp[k] = a[i];
+		k++;
+		i++;
+	}
+
+	// Insert all the remaining values from j to high into temp
+	while (j <= high)
+	{
+		temp[k] = a[j];
+		k++;
+		j++;
+	}
+
+	// Assign sorted data stored in temp[] to a[].
+	for (i = low; i <= high; i++)
+	{
+		a[i] = temp[i - low];
+	}
+}
+
+// Merge sort implementation
+void mergeSort(int a[], int low, int high)
+{
+	int mid;
+
+	if (low < high)
+	{
+		mid = (low + high) / 2;
+
+		// Split the input array into two arrays to be merged later
+		mergeSort(a, low, mid);
+		mergeSort(a, mid + 1, high);
+
+		// Merge the two arrays
+		merge(a, low, high, mid);
+	}
+}
+
+int main()
+{
+	// Create number arrays variables
+
+	int* a = NULL;
+	int* b = NULL;
+	int* c = NULL;
+
+	a = new int[1000];
+	b = new int[10000];
+	c =	new int[100000];
+
+
+	// Random Number Arrays
+	cout << "\n\nTiming for random arrays: \n\n";
+
+	// Selection Sort Timing
+	genRand(a, b, c);
+
+	auto start = high_resolution_clock::now();
+	selectionSort(a, 1000);
+	auto stop = high_resolution_clock::now();
+	auto time = duration_cast<microseconds>(stop - start);
+	cout << "SS (1,000) Time: " << time.count() << " microseconds\n\n";
+
+	start = high_resolution_clock::now();
+	selectionSort(b, 10000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "SS (10,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	start = high_resolution_clock::now();
+	selectionSort(c, 100000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "SS (100,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	// Insertion Sort Timing
+	genRand(a, b, c);
+
+	start = high_resolution_clock::now();
+	insertionSort(a, 1000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "IS (1,000) Time: " << time.count() << " microseconds\n\n";
+
+	start = high_resolution_clock::now();
+	insertionSort(b, 10000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "IS (10,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	start = high_resolution_clock::now();
+	insertionSort(c, 100000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "IS (100,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	// Bubble Sort Timing
+	genRand(a, b, c);
+
+	start = high_resolution_clock::now();
+	bubbleSort(a, 1000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "BS (1,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	start = high_resolution_clock::now();
+	bubbleSort(b, 10000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "BS (10,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	start = high_resolution_clock::now();
+	bubbleSort(c, 100000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "BS (100,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	// Bubble Sort with Swaps Timing
+	genRand(a, b, c);
+
+	start = high_resolution_clock::now();
+	bubbleSortSwap(a, 1000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "BSw/S (1,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	start = high_resolution_clock::now();
+	bubbleSortSwap(b, 10000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "BSw/S (10,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	start = high_resolution_clock::now();
+	bubbleSortSwap(c, 100000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "BSw/S (100,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	// Quick Sort Timing
+	genRand(a, b, c);
+
+	start = high_resolution_clock::now();
+	quickSort(a, 0, 999);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "QS (1,000) Time: " << time.count() << " microseconds\n\n";
+
+	start = high_resolution_clock::now();
+	quickSort(b, 0, 9999);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "QS (10,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	start = high_resolution_clock::now();
+	quickSort(c, 0, 99999);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "QS (100,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	// Merge Sort Timing
+	genRand(a, b, c);
+
+	start = high_resolution_clock::now();
+	mergeSort(a, 0, 999);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "MS (1,000) Time: " << time.count() << " microseconds\n\n";
+
+	start = high_resolution_clock::now();
+	mergeSort(b, 0, 9999);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "MS (10,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	start = high_resolution_clock::now();
+	mergeSort(c, 0, 99999);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "MS (100,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+//-------------------------------------------------------------------------------//
+
+	// Sored Arrays
+	cout << "\n\nTiming for sorted arrays: \n\n";
+
+	// Selection Sort Timing
+	genSorted(a, b, c);
+
+	start = high_resolution_clock::now();
+	selectionSort(a, 1000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "SS (1,000) Time: " << time.count() << " microseconds\n\n";
+
+	start = high_resolution_clock::now();
+	selectionSort(b, 10000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "SS (10,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	start = high_resolution_clock::now();
+	selectionSort(c, 100000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "SS (100,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	// Insertion Sort Timing
+	genSorted(a, b, c);
+
+	start = high_resolution_clock::now();
+	insertionSort(a, 1000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "IS (1,000) Time: " << time.count() << " microseconds\n\n";
+
+	start = high_resolution_clock::now();
+	insertionSort(b, 10000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "IS (10,000) Time: " << time.count() << " microseconds\n\n";
+
+	start = high_resolution_clock::now();
+	insertionSort(c, 100000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "IS (100,000) Time: " << time.count() << " microseconds\n\n";
+
+	// Bubble Sort Timing
+	genSorted(a, b, c);
+
+	start = high_resolution_clock::now();
+	bubbleSort(a, 1000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "BS (1,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	start = high_resolution_clock::now();
+	bubbleSort(b, 10000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "BS (10,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	start = high_resolution_clock::now();
+	bubbleSort(c, 100000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "BS (100,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	// Bubble Sort with Swaps Timing
+	genSorted(a, b, c);
+
+	start = high_resolution_clock::now();
+	bubbleSortSwap(a, 1000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "BSw/S (1,000) Time: " << time.count() << " microseconds\n\n";
+
+	start = high_resolution_clock::now();
+	bubbleSortSwap(b, 10000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "BSw/S (10,000) Time: " << time.count() << " microseconds\n\n";
+
+	start = high_resolution_clock::now();
+	bubbleSortSwap(c, 100000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "BSw/S (100,000) Time: " << time.count() << " microseconds\n\n";
+
+	// Quick Sort Timing
+	genSorted(a, b, c);
+
+	start = high_resolution_clock::now();
+	quickSort(a, 0, 999);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "QS (1,000) Time: " << time.count() << " microseconds\n\n";
+
+	start = high_resolution_clock::now();
+	quickSort(b, 0, 9999);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "QS (10,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	start = high_resolution_clock::now();
+	quickSort(c, 0, 99999);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "QS (100,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	// Merge Sort Timing
+	genSorted(a, b, c);
+
+	start = high_resolution_clock::now();
+	mergeSort(a, 0, 999);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "MS (1,000) Time: " << time.count() << " microseconds\n\n";
+
+	start = high_resolution_clock::now();
+	mergeSort(b, 0, 9999);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "MS (10,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	start = high_resolution_clock::now();
+	mergeSort(c, 0, 99999);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "MS (100,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+//-------------------------------------------------------------------------------//
+
+	// Almost Sorted Arrays
+	cout << "\n\nTiming for almost sorted arrays: \n\n";
+
+	// Selection Sort Timing
+	genASorted(a, b, c);
+
+	start = high_resolution_clock::now();
+	selectionSort(a, 1000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "SS (1,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	start = high_resolution_clock::now();
+	selectionSort(b, 10000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "SS (10,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	start = high_resolution_clock::now();
+	selectionSort(c, 100000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "SS (100,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	// Insertion Sort Timing
+	genASorted(a, b, c);
+
+	start = high_resolution_clock::now();
+	insertionSort(a, 1000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "IS (1,000) Time: " << time.count() << " microseconds \n\n";
+
+	start = high_resolution_clock::now();
+	insertionSort(b, 10000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "IS (10,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	start = high_resolution_clock::now();
+	insertionSort(c, 100000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "IS (100,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	// Bubble Sort Timing
+	genASorted(a, b, c);
+
+	start = high_resolution_clock::now();
+	bubbleSort(a, 1000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "BS (1,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	start = high_resolution_clock::now();
+	bubbleSort(b, 10000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "BS (10,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	start = high_resolution_clock::now();
+	bubbleSort(c, 100000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "BS (100,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	// Bubble Sort with Swaps Timing
+	genASorted(a, b, c);
+
+	start = high_resolution_clock::now();
+	bubbleSortSwap(a, 1000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "BSw/S (1,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	start = high_resolution_clock::now();
+	bubbleSortSwap(b, 10000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "BSw/S (10,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	start = high_resolution_clock::now();
+	bubbleSortSwap(c, 100000);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "BSw/S (100,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	// Quick Sort Timing
+	genASorted(a, b, c);
+
+	start = high_resolution_clock::now();
+	quickSort(a, 0, 999);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "QS (1,000) Time: " << time.count() << " microseconds\n\n";
+
+	start = high_resolution_clock::now();
+	quickSort(b, 0, 9999);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "QS (10,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	start = high_resolution_clock::now();
+	quickSort(c, 0, 99999);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "QS (100,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	// Merge Sort Timing
+	genASorted(a, b, c);
+
+	start = high_resolution_clock::now();
+	mergeSort(a, 0, 999);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "MS (1,000) Time: " << time.count() << " microseconds\n\n";
+
+	start = high_resolution_clock::now();
+	mergeSort(b, 0, 9999);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "MS (10,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	start = high_resolution_clock::now();
+	mergeSort(c, 0, 99999);
+	stop = high_resolution_clock::now();
+	time = duration_cast<microseconds>(stop - start);
+	cout << "MS (100,000) Time: " << time.count() / 1000 << " milliseconds\n\n";
+
+	delete[] a;
+	delete[] b;
+	delete[] c;
+
+	a = NULL;
+	b = NULL;
+	c = NULL;
+
+	system("pause");
+	return 0;
+}
